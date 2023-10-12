@@ -23,7 +23,7 @@ packages:
 - "python"
 - "rename"
 remotes:
-- "url": "https://github.com/blocknetdx/blocknet.git"
+- "url": "https://github.com/rikublock/blocknet.git"
   "dir": "blocknet"
 files: []
 script: |
