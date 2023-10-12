@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     container: blocknetdx/devbuilds:gitlab-linux
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v1
         if: github.event.pull_request.draft == false
 
       - run: | 
@@ -42,7 +42,7 @@ jobs:
           make -j $(nproc)
           make install DESTDIR=$DISTDIR
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v1
         with:
           name: artifacts-linux
           path: |
