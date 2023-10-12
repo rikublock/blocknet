@@ -13,26 +13,23 @@ on:
 permissions:
   contents: write
 
+env:
+  DEPENDS_CACHE: /proj/depends-cache
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
     container: blocknetdx/devbuilds:gitlab-linux
     env:
-      BASEPREFIX: /opt/blocknetdx/blocknet/depends
-      BASEPREFIX_CACHE: /proj/depends-cache
       HOST: x86_64-pc-linux-gnu
     steps:
       - uses: actions/checkout@v1
         if: github.event.pull_request.draft == false
 
       - run: |
-          ls -al /proj/depends-cache
-
-      - run: |
+          export BASEPREFIX=$PWD/depends
           rm -rf $BASEPREFIX
-          mv $BASEPREFIX_CACHE $BASEPREFIX
-
-      - run: |
+          mv $DEPENDS_CACHE $BASEPREFIX
           export DISTDIR=$PWD/dist
           mkdir -p $DISTDIR
           chmod +x ./autogen.sh; sync
@@ -59,7 +56,6 @@ jobs:
     container: blocknetdx/devbuilds:gitlab-win
     env:
       BASEPREFIX: /opt/blocknetdx/blocknet/depends
-      BASEPREFIX_CACHE: /proj/depends-cache
       HOST: x86_64-w64-mingw32
     steps:
       - uses: actions/checkout@v1
@@ -67,7 +63,7 @@ jobs:
 
       - run: |
           rm -rf $BASEPREFIX
-          mv $BASEPREFIX_CACHE $BASEPREFIX
+          mv $DEPENDS_CACHE $BASEPREFIX
 
       - run: |
           export DISTDIR=$PWD/dist
@@ -98,7 +94,6 @@ jobs:
     container: blocknetdx/devbuilds:gitlab-mac
     env:
       BASEPREFIX: /opt/blocknetdx/blocknet/depends
-      BASEPREFIX_CACHE: /proj/depends-cache
       HOST: x86_64-apple-darwin14
     steps:
       - uses: actions/checkout@v1
@@ -106,7 +101,7 @@ jobs:
 
       - run: |
           rm -rf $BASEPREFIX
-          mv $BASEPREFIX_CACHE $BASEPREFIX
+          mv $DEPENDS_CACHE $BASEPREFIX
 
       - run: |
           export DISTDIR=$PWD/dist
