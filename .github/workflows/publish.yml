@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,13 +52,6 @@ jobs:
       - name: Prepare Gitian
         run: blocknet/contrib/gitian-build.py --setup --docker --commit dummy ${{ github.ref_name}}
 
-      # - uses: actions/cache@v3
-      #   id: ccache
-      #   with:
-      #     path: /opt/actions-runner/_work/dash/dash/gitian-builder/cache/dash-linux-0.17
-      #     key: ${{ runner.os }}-ccache-${{ github.sha }}
-      #     restore-keys: ${{ runner.os }}-ccache-
-
       - name: Run Gitian build
         run: |
           export GPG_TTY=$(tty)
@@ -71,11 +64,13 @@ jobs:
           prerelease: true
           generate_release_notes: true
           files: |
-            blocknet-binaries/**blocknet-*linux-gnu.tar.gz
+            blocknet-binaries/**/blocknet-*linux-gnu.tar.gz
             gitian-builder/result/blocknet-linux-*-res.yml
 
       - name: Set up QEMU to run multi-arch builds
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
 
       - name: Set up Docker BuildX
         id: buildx
@@ -96,7 +91,7 @@ jobs:
     #   uses: docker/build-push-action@v2
     #   with:
     #     context: ${{ github.workspace }}
-    #     file: ./dash/contrib/containers/deploy/Dockerfile.GitHubActions.Gitian
+    #     file: ./blocknet/contrib/containers/Dockerfile
     #     push: true
     #     tags: ${{ steps.meta.outputs.tags }}
     #     labels: ${{ steps.meta.outputs.labels }}
@@ -149,8 +144,8 @@ jobs:
           prerelease: true
           generate_release_notes: true
           files: |
-            blocknet-binaries/**blocknet-*win64.zip
-            blocknet-binaries/**blocknet-*.exe
+            blocknet-binaries/**/blocknet-*win64.zip
+            blocknet-binaries/**/blocknet-*.exe
             gitian-builder/result/blocknet-win-*-res.yml
 
   build-mac:
@@ -200,6 +195,6 @@ jobs:
           prerelease: true
           generate_release_notes: true
           files: |
-            blocknet-binaries/**blocknet-*osx64.tar.gz
-            blocknet-binaries/**blocknet-*.dmg
+            blocknet-binaries/**/blocknet-*osx64.tar.gz
+            blocknet-binaries/**/blocknet-*.dmg
             gitian-builder/result/blocknet-osx-*-res.yml
