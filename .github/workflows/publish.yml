@@ -16,14 +16,9 @@ on:
 permissions:
   contents: write
 
-# runs-on:
-#   - self-hosted
-#   - label-1
-
 jobs:
   build-linux:
     runs-on: ubuntu-20.04
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -83,16 +78,7 @@ jobs:
       - name: Run Gitian build
         run: |
           export GPG_TTY=$(tty)
-          blocknet/contrib/gitian-build.py \ 
-            --build \
-            --docker \
-            --detach-sign \
-            --no-commit \
-            --os l \
-            --jobs $(nproc) \
-            --memory `awk '/^Mem/ {print $7}' <(free -m)` \
-            --commit \
-            dummy dev
+          blocknet/contrib/gitian-build.py --build --docker --detach-sign --no-commit --os l --jobs $(nproc) --memory `awk '/^Mem/ {print $7}' <(free -m)` --commit dummy dev
 
       - name: Release to Github
         uses: softprops/action-gh-release@v1
@@ -135,7 +121,6 @@ jobs:
 
   build-windows:
     runs-on: ubuntu-22.04
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -170,16 +155,7 @@ jobs:
       - name: Run Gitian build
         run: |
           export GPG_TTY=$(tty)
-          blocknet/contrib/gitian-build.py \ 
-            --build \
-            --docker \
-            --detach-sign \
-            --no-commit \
-            --os w \
-            --jobs $(nproc) \
-            --memory `awk '/^Mem/ {print $7}' <(free -m)` \
-            --commit \
-            dummy ${{ github.ref_name}}
+          blocknet/contrib/gitian-build.py --build --docker --detach-sign --no-commit --os w --jobs $(nproc) --memory `awk '/^Mem/ {print $7}' <(free -m)` --commit dummy ${{ github.ref_name}}
 
       - name: Release to Github
         uses: softprops/action-gh-release@v1
@@ -193,7 +169,6 @@ jobs:
 
   build-mac:
     runs-on: ubuntu-22.04
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -231,16 +206,7 @@ jobs:
       - name: Run Gitian build
         run: |
           export GPG_TTY=$(tty)
-          blocknet/contrib/gitian-build.py \ 
-            --build \
-            --docker \
-            --detach-sign \
-            --no-commit \
-            --os m \
-            --jobs $(nproc) \
-            --memory `awk '/^Mem/ {print $7}' <(free -m)` \
-            --commit \
-            dummy ${{ github.ref_name}}
+          blocknet/contrib/gitian-build.py --build --docker --detach-sign --no-commit --os m --jobs $(nproc) --memory `awk '/^Mem/ {print $7}' <(free -m)` --commit dummy ${{ github.ref_name}}
 
       - name: Release to Github
         uses: softprops/action-gh-release@v1
