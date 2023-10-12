@@ -62,6 +62,9 @@ jobs:
     - name: Install apt-cacher-ng
       run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq apt-cacher-ng
 
+    - name: Download MacOS xcode dependencies
+      run: wget -P gitian-builder/inputs https://bitcoincore.org/depends-sources/sdks/MacOSX10.11.sdk.tar.gz
+
     # - name: Get branch name
     #   id: branch-name
     #   uses: tj-actions/branch-names@v5
