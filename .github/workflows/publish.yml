@@ -2,15 +2,8 @@ name: Publish
 
 on:
   push:
-    branches:
-      - main
-      - dev
     tags:
-      - "v**"
-  pull_request:
-    branches:
-      - main
-      - dev
+      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -22,7 +15,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        if: github.event.pull_request.draft == false
         with:
           path: blocknet
 
@@ -44,29 +36,21 @@ jobs:
           repository: blocknetdx/gitian.sigs
           path: gitian.sigs
 
-      # - name: Docker meta
-      #   id: docker_meta
-      #   uses: docker/metadata-action@v3
-      #   with:
-      #     images: dashpay/dashd
-      #     tags: |
-      #       type=semver,pattern={{version}},value=${{ github.event.inputs.tag }}
-      #       type=raw,value=latest-dev
-      #     flavor: |
-      #       latest=false
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: blocknetdx/blocknet
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Install apt-cacher-ng
         run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq apt-cacher-ng
 
-      # - name: Get branch name
-      #   id: branch-name
-      #   uses: tj-actions/branch-names@v5
-
       - name: Prepare Gitian
-        run: blocknet/contrib/gitian-build.py --setup --docker --commit dummy dev
-
-      # - name: Prepare Gitian
-      #   run: dash/contrib/gitian-build.py --setup "dummy" "${{ steps.branch-name.outputs.current_branch }}"
+        run: blocknet/contrib/gitian-build.py --setup --docker --commit dummy ${{ github.ref_name}}
 
       # - uses: actions/cache@v3
       #   id: ccache
@@ -78,7 +62,7 @@ jobs:
       - name: Run Gitian build
         run: |
           export GPG_TTY=$(tty)
-          blocknet/contrib/gitian-build.py --build --docker --detach-sign --no-commit --os l --jobs $(nproc) --memory `awk '/^Mem/ {print $7}' <(free -m)` --commit dummy dev
+          blocknet/contrib/gitian-build.py --build --docker --detach-sign --no-commit --os l --jobs $(nproc) --memory `awk '/^Mem/ {print $7}' <(free -m)` --commit dummy ${{ github.ref_name}}
 
       - name: Release to Github
         uses: softprops/action-gh-release@v1
@@ -88,6 +72,7 @@ jobs:
           generate_release_notes: true
           files: |
             blocknet-binaries/**blocknet-*linux-gnu.tar.gz
+            gitian-builder/result/blocknet-linux-*-res.yml
 
       - name: Set up QEMU to run multi-arch builds
         uses: docker/setup-qemu-action@v3
@@ -105,6 +90,7 @@ jobs:
           username: ${{ secrets.org_blocknetdximg_username }}
           password: ${{ secrets.org_blocknetdximg_password }}
 
+    # TODO
     # - name: Build and push Docker image
     #   id: docker_build
     #   uses: docker/build-push-action@v2
@@ -112,11 +98,11 @@ jobs:
     #     context: ${{ github.workspace }}
     #     file: ./dash/contrib/containers/deploy/Dockerfile.GitHubActions.Gitian
     #     push: true
-    #     tags: ${{ steps.docker_meta.outputs.tags }}
-    #     labels: ${{ steps.docker_meta.outputs.labels }}
+    #     tags: ${{ steps.meta.outputs.tags }}
+    #     labels: ${{ steps.meta.outputs.labels }}
     #     platforms: linux/amd64,linux/arm64
     #     build-args: |
-    #       TAG=${{ steps.docker_meta.outputs.version }}
+    #       TAG=${{ steps.meta.outputs.version }}
     #       BRANCH=${{ steps.branch-name.outputs.current_branch }}
 
   build-windows:
@@ -124,7 +110,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        if: github.event.pull_request.draft == false
         with:
           path: blocknet
 
@@ -166,13 +151,13 @@ jobs:
           files: |
             blocknet-binaries/**blocknet-*win64.zip
             blocknet-binaries/**blocknet-*.exe
+            gitian-builder/result/blocknet-win-*-res.yml
 
   build-mac:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        if: github.event.pull_request.draft == false
         with:
           path: blocknet
 
@@ -217,3 +202,4 @@ jobs:
           files: |
             blocknet-binaries/**blocknet-*osx64.tar.gz
             blocknet-binaries/**blocknet-*.dmg
+            gitian-builder/result/blocknet-osx-*-res.yml
