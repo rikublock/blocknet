@@ -26,14 +26,13 @@ jobs:
       - uses: actions/checkout@v3
         if: github.event.pull_request.draft == false
 
-      - run: |
+      - name: Build binaries
+        run: |
           export BASEPREFIX=$PWD/depends
-          echo $BASEPREFIX
           rm -rf $BASEPREFIX
           mv $DEPENDS_CACHE $BASEPREFIX
           export DISTDIR=$PWD/dist
           mkdir -p $DISTDIR
-          echo $DISTDIR
           chmod +x ./autogen.sh; sync
           ./autogen.sh
           CONFIG_SITE="$BASEPREFIX/$HOST/share/config.site" ./configure CC=gcc-8 CXX=g++-8 CFLAGS="-g3 -O0" CXXFLAGS="-g3 -O0" --enable-debug --prefix=/
@@ -57,17 +56,16 @@ jobs:
     runs-on: ubuntu-latest
     container: blocknetdx/devbuilds:gitlab-win
     env:
-      BASEPREFIX: /opt/blocknetdx/blocknet/depends
       HOST: x86_64-w64-mingw32
     steps:
       - uses: actions/checkout@v3
         if: github.event.pull_request.draft == false
 
-      - run: |
+      - name: Build binaries
+        run: |
+          export BASEPREFIX=$PWD/depends
           rm -rf $BASEPREFIX
           mv $DEPENDS_CACHE $BASEPREFIX
-
-      - run: |
           export DISTDIR=$PWD/dist
           mkdir -p $DISTDIR
           chmod +x ./autogen.sh; sync
@@ -79,7 +77,7 @@ jobs:
           make install DESTDIR=$DISTDIR
           cp *win64-setup.exe $DISTDIR/bin/blocknet-win64-setup.exe
 
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v3
         with:
           name: artifacts-win
           path: |
@@ -95,17 +93,16 @@ jobs:
     runs-on: ubuntu-latest
     container: blocknetdx/devbuilds:gitlab-mac
     env:
-      BASEPREFIX: /opt/blocknetdx/blocknet/depends
       HOST: x86_64-apple-darwin14
     steps:
       - uses: actions/checkout@v3
         if: github.event.pull_request.draft == false
 
-      - run: |
+      - name: Build binaries
+        run: |
+          export BASEPREFIX=$PWD/depends
           rm -rf $BASEPREFIX
           mv $DEPENDS_CACHE $BASEPREFIX
-
-      - run: |
           export DISTDIR=$PWD/dist
           mkdir -p $DISTDIR
           chmod +x ./autogen.sh; sync
@@ -116,7 +113,7 @@ jobs:
           mkdir -p $DISTDIR/bin && llvm-dsymutil-6.0 src/qt/blocknet-qt -o $DISTDIR/bin/blocknet-qt.dSYM
           make install DESTDIR=$DISTDIR
 
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v3
         with:
           name: artifacts-mac
           path: |
