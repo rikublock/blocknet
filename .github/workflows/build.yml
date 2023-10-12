@@ -14,6 +14,7 @@ permissions:
   contents: write
 
 env:
+  BASEPREFIX: /opt/blocknetdx/blocknet/depends
   DEPENDS_CACHE: /proj/depends-cache
 
 jobs:
@@ -28,7 +29,6 @@ jobs:
 
       - name: Build binaries
         run: |
-          export BASEPREFIX=$PWD/depends
           rm -rf $BASEPREFIX
           mv $DEPENDS_CACHE $BASEPREFIX
           export DISTDIR=$PWD/dist
@@ -63,7 +63,6 @@ jobs:
 
       - name: Build binaries
         run: |
-          export BASEPREFIX=$PWD/depends
           rm -rf $BASEPREFIX
           mv $DEPENDS_CACHE $BASEPREFIX
           export DISTDIR=$PWD/dist
@@ -100,7 +99,6 @@ jobs:
 
       - name: Build binaries
         run: |
-          export BASEPREFIX=$PWD/depends
           rm -rf $BASEPREFIX
           mv $DEPENDS_CACHE $BASEPREFIX
           export DISTDIR=$PWD/dist
