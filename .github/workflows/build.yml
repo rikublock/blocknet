@@ -23,15 +23,17 @@ jobs:
     env:
       HOST: x86_64-pc-linux-gnu
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
         if: github.event.pull_request.draft == false
 
       - run: |
           export BASEPREFIX=$PWD/depends
+          echo $BASEPREFIX
           rm -rf $BASEPREFIX
           mv $DEPENDS_CACHE $BASEPREFIX
           export DISTDIR=$PWD/dist
           mkdir -p $DISTDIR
+          echo $DISTDIR
           chmod +x ./autogen.sh; sync
           ./autogen.sh
           CONFIG_SITE="$BASEPREFIX/$HOST/share/config.site" ./configure CC=gcc-8 CXX=g++-8 CFLAGS="-g3 -O0" CXXFLAGS="-g3 -O0" --enable-debug --prefix=/
@@ -39,7 +41,7 @@ jobs:
           make -j $(nproc)
           make install DESTDIR=$DISTDIR
 
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v3
         with:
           name: artifacts-linux
           path: |
@@ -58,7 +60,7 @@ jobs:
       BASEPREFIX: /opt/blocknetdx/blocknet/depends
       HOST: x86_64-w64-mingw32
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
         if: github.event.pull_request.draft == false
 
       - run: |
@@ -96,7 +98,7 @@ jobs:
       BASEPREFIX: /opt/blocknetdx/blocknet/depends
       HOST: x86_64-apple-darwin14
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
         if: github.event.pull_request.draft == false
 
       - run: |
