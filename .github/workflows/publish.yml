@@ -23,93 +23,101 @@ permissions:
 jobs:
   build-linux:
     runs-on: ubuntu-20.04
+
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      if: github.event.pull_request.draft == false
-      with:
-        path: blocknet
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: github.event.pull_request.draft == false
+        with:
+          path: blocknet
 
-    - name: Checkout Gitian builder
-      uses: actions/checkout@v4
-      with:
-        repository: devrandom/gitian-builder
-        path: gitian-builder
+      - name: Checkout Gitian builder
+        uses: actions/checkout@v4
+        with:
+          repository: devrandom/gitian-builder
+          path: gitian-builder
 
-    - name: Checkout detached sigs
-      uses: actions/checkout@v4
-      with:
-        repository: blocknetdx/blocknet-detached-sigs
-        path: blocknet-detached-sigs
+      - name: Checkout detached sigs
+        uses: actions/checkout@v4
+        with:
+          repository: blocknetdx/blocknet-detached-sigs
+          path: blocknet-detached-sigs
 
-    - name: Checkout gitian sigs
-      uses: actions/checkout@v4
-      with:
-        repository: blocknetdx/gitian.sigs
-        path: gitian.sigs
+      - name: Checkout gitian sigs
+        uses: actions/checkout@v4
+        with:
+          repository: blocknetdx/gitian.sigs
+          path: gitian.sigs
 
-    # - name: Docker meta
-    #   id: docker_meta
-    #   uses: docker/metadata-action@v3
-    #   with:
-    #     images: dashpay/dashd
-    #     tags: |
-    #       type=semver,pattern={{version}},value=${{ github.event.inputs.tag }}
-    #       type=raw,value=latest-dev
-    #     flavor: |
-    #       latest=false
+      # - name: Docker meta
+      #   id: docker_meta
+      #   uses: docker/metadata-action@v3
+      #   with:
+      #     images: dashpay/dashd
+      #     tags: |
+      #       type=semver,pattern={{version}},value=${{ github.event.inputs.tag }}
+      #       type=raw,value=latest-dev
+      #     flavor: |
+      #       latest=false
 
-    - name: Install apt-cacher-ng
-      run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq apt-cacher-ng
+      - name: Install apt-cacher-ng
+        run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq apt-cacher-ng
 
-    - name: Download MacOS xcode dependencies
-      run: wget -P gitian-builder/inputs https://bitcoincore.org/depends-sources/sdks/MacOSX10.11.sdk.tar.gz
+      # - name: Get branch name
+      #   id: branch-name
+      #   uses: tj-actions/branch-names@v5
 
-    # - name: Get branch name
-    #   id: branch-name
-    #   uses: tj-actions/branch-names@v5
+      - name: Prepare Gitian
+        run: blocknet/contrib/gitian-build.py --setup --docker --commit dummy dev
 
-    - name: Prepare Gitian
-      run: blocknet/contrib/gitian-build.py --setup --docker --commit dummy dev
+      # - name: Prepare Gitian
+      #   run: dash/contrib/gitian-build.py --setup "dummy" "${{ steps.branch-name.outputs.current_branch }}"
 
-    # - name: Prepare Gitian
-    #   run: dash/contrib/gitian-build.py --setup "dummy" "${{ steps.branch-name.outputs.current_branch }}"
+      # - uses: actions/cache@v3
+      #   id: ccache
+      #   with:
+      #     path: /opt/actions-runner/_work/dash/dash/gitian-builder/cache/dash-linux-0.17
+      #     key: ${{ runner.os }}-ccache-${{ github.sha }}
+      #     restore-keys: ${{ runner.os }}-ccache-
 
-    # - uses: actions/cache@v3
-    #   id: ccache
-    #   with:
-    #     path: /opt/actions-runner/_work/dash/dash/gitian-builder/cache/dash-linux-0.17
-    #     key: ${{ runner.os }}-ccache-${{ github.sha }}
-    #     restore-keys: ${{ runner.os }}-ccache-
+      - name: Run Gitian build
+        run: |
+          export GPG_TTY=$(tty)
+          blocknet/contrib/gitian-build.py \ 
+            --build \
+            --docker \
+            --detach-sign \
+            --no-commit \
+            --os l \
+            --jobs $(nproc) \
+            --memory `awk '/^Mem/ {print $7}' <(free -m)` \
+            --commit \
+            dummy dev
 
-    - name: Run Gitian build
-      run: |
-        export GPG_TTY=$(tty)
-        blocknet/contrib/gitian-build.py --build --docker --detach-sign --no-commit --os l --jobs 2 --memory 8000 --commit dummy dev
+      - name: Release to Github
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Blocknet Core ${{ github.ref_name}}
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            blocknet-binaries/**blocknet-*linux-gnu.tar.gz
 
-    # - name: Run Gitian build
-    #   run: |
-    #     export GPG_TTY=$(tty)
-    #     blocknet/contrib/gitian-build.py -c -b -n -D -o l \
-    #     -u https://github.com/dashpay/dash \
-    #     -j $(nproc) -m `awk '/^Mem/ {print $7}' <(free -m)` \
-    #     dummy ${{ steps.branch-name.outputs.current_branch }}
+      - name: Set up QEMU to run multi-arch builds
+        uses: docker/setup-qemu-action@v3
 
-    # - name: Set up QEMU to run multi-arch builds
-    #   uses: docker/setup-qemu-action@v1
+      - name: Set up Docker BuildX
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: v0.8.0
+          install: true
 
-    # - name: Set up Docker BuildX
-    #   id: buildx
-    #   uses: docker/setup-buildx-action@v1
-    #   with:
-    #     version: v0.8.0
-    #     install: true
-
-    # - name: Login to DockerHub
-    #   uses: docker/login-action@v1
-    #   with:
-    #     username: ${{ secrets.DOCKERHUB_USERNAME }}
-    #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.org_blocknetdximg_username }}
+          password: ${{ secrets.org_blocknetdximg_password }}
 
     # - name: Build and push Docker image
     #   id: docker_build
@@ -124,3 +132,122 @@ jobs:
     #     build-args: |
     #       TAG=${{ steps.docker_meta.outputs.version }}
     #       BRANCH=${{ steps.branch-name.outputs.current_branch }}
+
+  build-windows:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: github.event.pull_request.draft == false
+        with:
+          path: blocknet
+
+      - name: Checkout Gitian builder
+        uses: actions/checkout@v4
+        with:
+          repository: devrandom/gitian-builder
+          path: gitian-builder
+
+      - name: Checkout detached sigs
+        uses: actions/checkout@v4
+        with:
+          repository: blocknetdx/blocknet-detached-sigs
+          path: blocknet-detached-sigs
+
+      - name: Checkout gitian sigs
+        uses: actions/checkout@v4
+        with:
+          repository: blocknetdx/gitian.sigs
+          path: gitian.sigs
+
+      - name: Install apt-cacher-ng
+        run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq apt-cacher-ng
+
+      - name: Prepare Gitian
+        run: blocknet/contrib/gitian-build.py --setup --docker --commit dummy ${{ github.ref_name}}
+
+      - name: Run Gitian build
+        run: |
+          export GPG_TTY=$(tty)
+          blocknet/contrib/gitian-build.py \ 
+            --build \
+            --docker \
+            --detach-sign \
+            --no-commit \
+            --os w \
+            --jobs $(nproc) \
+            --memory `awk '/^Mem/ {print $7}' <(free -m)` \
+            --commit \
+            dummy ${{ github.ref_name}}
+
+      - name: Release to Github
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Blocknet Core ${{ github.ref_name}}
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            blocknet-binaries/**blocknet-*win64.zip
+            blocknet-binaries/**blocknet-*.exe
+
+  build-mac:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: github.event.pull_request.draft == false
+        with:
+          path: blocknet
+
+      - name: Checkout Gitian builder
+        uses: actions/checkout@v4
+        with:
+          repository: devrandom/gitian-builder
+          path: gitian-builder
+
+      - name: Checkout detached sigs
+        uses: actions/checkout@v4
+        with:
+          repository: blocknetdx/blocknet-detached-sigs
+          path: blocknet-detached-sigs
+
+      - name: Checkout gitian sigs
+        uses: actions/checkout@v4
+        with:
+          repository: blocknetdx/gitian.sigs
+          path: gitian.sigs
+
+      - name: Install apt-cacher-ng
+        run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq apt-cacher-ng
+
+      - name: Download macOS Xcode dependencies
+        run: wget -P gitian-builder/inputs https://bitcoincore.org/depends-sources/sdks/MacOSX10.11.sdk.tar.gz
+
+      - name: Prepare Gitian
+        run: blocknet/contrib/gitian-build.py --setup --docker --commit dummy ${{ github.ref_name}}
+
+      - name: Run Gitian build
+        run: |
+          export GPG_TTY=$(tty)
+          blocknet/contrib/gitian-build.py \ 
+            --build \
+            --docker \
+            --detach-sign \
+            --no-commit \
+            --os m \
+            --jobs $(nproc) \
+            --memory `awk '/^Mem/ {print $7}' <(free -m)` \
+            --commit \
+            dummy ${{ github.ref_name}}
+
+      - name: Release to Github
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Blocknet Core ${{ github.ref_name}}
+          prerelease: true
+          generate_release_notes: true
+          files: |
+            blocknet-binaries/**blocknet-*osx64.tar.gz
+            blocknet-binaries/**blocknet-*.dmg
