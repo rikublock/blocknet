@@ -67,7 +67,7 @@ jobs:
     #   uses: tj-actions/branch-names@v5
 
     - name: Prepare Gitian
-      run: blocknet/contrib/gitian-build.py --docker --setup dummy dev
+      run: blocknet/contrib/gitian-build.py --setup --docker --commit dummy dev
 
     # - name: Prepare Gitian
     #   run: dash/contrib/gitian-build.py --setup "dummy" "${{ steps.branch-name.outputs.current_branch }}"
@@ -82,7 +82,7 @@ jobs:
     - name: Run Gitian build
       run: |
         export GPG_TTY=$(tty)
-        blocknet/contrib/gitian-build.py --docker --detach-sign --no-commit --os l --jobs 2 --memory 8000 --commit --build dummy dev
+        blocknet/contrib/gitian-build.py --build --docker --detach-sign --no-commit --os l --jobs 2 --memory 8000 --commit dummy dev
 
     # - name: Run Gitian build
     #   run: |
